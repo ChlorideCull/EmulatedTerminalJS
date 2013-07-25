@@ -19,3 +19,4 @@ It's highly extensible, accessed through the functions `AddTerminalCommand`, `Cr
 
 * Only one terminal per page.
 * Not usable in worst browser (IE) because I suck with jQuery and it's different. I assume everyone interested in this doesn't run IE.
+* Obviously not POSIX-standard compatible.
