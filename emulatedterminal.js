@@ -104,6 +104,11 @@ function addBasicCommands()
 			}
 			etermset.pathline = pathline;
 		});
+	EmulatedTerminal.AddTerminalCommand("credits", function(argstring) {
+			EmulatedTerminal.WriteTerminalLine("Made by Chloride Cull one dark night in 2013...");
+			EmulatedTerminal.WriteTerminalLine("Available on <a href=\"https://github.com/ChlorideCull/EmulatedTerminalJS\">GitHub</a>.");
+			EmulatedTerminal.WriteTerminalLine("Released under the MIT License.");
+		});
 }
 
 EmulatedTerminal.CreateTerminal = function(WhichEntity, Username, CurrentPath)
