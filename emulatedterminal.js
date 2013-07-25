@@ -36,6 +36,7 @@ function elemKeyPress(event)
 		EmulatedTerminal.WriteTerminalLine(tmp);
 		processLine(etermset.whichEntity.children["inputline"].innerHTML.substring(etermset.pathline.length));
 		etermset.whichEntity.children["inputline"].innerHTML = etermset.pathline;
+		etermset.whichEntity.children["inputline"].innerHTML.scrollIntoView();
 	}
 	else
 	{
