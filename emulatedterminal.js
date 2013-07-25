@@ -53,6 +53,7 @@ function elemKeyDown(event)
 		{
 			etermset.whichEntity.children["inputline"].innerHTML = etermset.whichEntity.children["inputline"].innerHTML.substring(0, etermset.whichEntity.children["inputline"].innerHTML.length - 1);
 		}
+		return false;
 	}
 }
 
