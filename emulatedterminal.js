@@ -27,16 +27,23 @@ var EmulatedTerminal = new Array();
 
 (function() {
 var etermset = new Array();
+var previouslines = new Array();
+previouslines[0] = new Array(); //lines
+previouslines[1] = 0; //currentline
+previouslines[2] = 0; //maxlines
 
 function elemKeyPress(event)
 {
 	if (event.which == 13) //enter
 	{
 		var tmp = etermset.whichEntity.children["inputline"].innerHTML;
+		previouslines[0].push(tmp);
+		previouslines[2] = previouslines[2] + 1;
+		previouslines[1] = previouslines[2];
 		EmulatedTerminal.WriteTerminalLine(tmp);
 		processLine(etermset.whichEntity.children["inputline"].innerHTML.substring(etermset.pathline.length));
 		etermset.whichEntity.children["inputline"].innerHTML = etermset.pathline;
-		etermset.whichEntity.children["inputline"].innerHTML.scrollIntoView();
+		etermset.whichEntity.children["inputline"].scrollIntoView();
 	}
 	else
 	{
@@ -47,11 +54,30 @@ function elemKeyPress(event)
 
 function elemKeyDown(event)
 {
-	if (event.which == 8)
+	if (event.which == 8) //backspace
 	{
 		if (etermset.whichEntity.children["inputline"].innerHTML.length != etermset.pathline.length)
 		{
 			etermset.whichEntity.children["inputline"].innerHTML = etermset.whichEntity.children["inputline"].innerHTML.substring(0, etermset.whichEntity.children["inputline"].innerHTML.length - 1);
+		}
+		return false;
+	}
+	else if (event.which == 38) //up
+	{
+		if (previouslines[1] > 0)
+		{
+			previouslines[1] = previouslines[1] - 1;
+			etermset.whichEntity.children["inputline"].innerHTML = previouslines[0][previouslines[1]];
+		}
+		return false;
+	}
+	else if (event.which == 40) //down
+	{
+		if (previouslines[1] < (previouslines[2] - 1))
+		{
+			console.log(true);
+			previouslines[1] = previouslines[1] + 1;
+			etermset.whichEntity.children["inputline"].innerHTML = previouslines[0][previouslines[1]];
 		}
 		return false;
 	}
@@ -60,14 +86,26 @@ function elemKeyDown(event)
 function processLine(line)
 {
 	var command = line.split(" ")[0];
-	if (etermset.validcommands[command] == null)
+	var fileid = etermset.filesindex[command];
+	console.log(etermset.files[fileid]);
+	if (etermset.files[fileid] != null && etermset.files[fileid][0] == "bin")
 	{
-		EmulatedTerminal.WriteTerminalLine(command + ": command not found");
+		etermset.files[fileid][2](line.substring(command.length, line.length).trim());
 	}
 	else
 	{
-		etermset.validcommands[command](line.substring(command.length, line.length).trim());
+		EmulatedTerminal.WriteTerminalLine(command + ": command not found");
 	}
+}
+
+function addtointernalfs(zero, one, two)
+{
+	var tmp = new Array();
+	tmp[0] = zero;
+	tmp[1] = one;
+	tmp[2] = two;
+	etermset.files.push(tmp);
+	etermset.filesindex[one] = etermset.files.indexOf(tmp);
 }
 
 EmulatedTerminal.WriteTerminalLine = function(ToWrite)
@@ -79,19 +117,63 @@ EmulatedTerminal.WriteTerminalLine = function(ToWrite)
 
 EmulatedTerminal.AddTerminalCommand = function(name, func)
 {
-	etermset.validcommands[name] = func;
+	addtointernalfs("bin", name, func);
+}
+
+EmulatedTerminal.SetTerminalFile = function(name, contents)
+{
+	addtointernalfs("txt", name, contents);
+}
+
+EmulatedTerminal.ReadTerminalFile = function(name)
+{
+	if (etermset.files[etermset.filesindex[name]] != null && etermset.files[etermset.filesindex[name]][0] == "txt")
+	{
+		return etermset.files[etermset.filesindex[name]][2];
+	}
+	return null;
 }
 
 function addBasicCommands()
 {
 	EmulatedTerminal.AddTerminalCommand("uname", function(argstring) {
-			EmulatedTerminal.WriteTerminalLine("EmulatedTerminal " + etermset.hostname + " 1.0.0-github JavaScript CC/EmulatedTerminal");
+			EmulatedTerminal.WriteTerminalLine("EmulatedTerminal " + etermset.hostname + " 1.1.0-github JavaScript CC/EmulatedTerminal");
 		});
 	EmulatedTerminal.AddTerminalCommand("echo", function(argstring) {
 			EmulatedTerminal.WriteTerminalLine(argstring);
 		});
 	EmulatedTerminal.AddTerminalCommand("clear", function(argstring) {
 			etermset.whichEntity.innerHTML = "<span id=\"inputline\">" + etermset.pathline + "</span>";
+		});
+	EmulatedTerminal.AddTerminalCommand("ls", function(argstring) {
+			var tmp = "";
+			for (var i = 0; i < etermset.files.length; i++)
+			{
+				if ((etermset.files[i][1].indexOf(".") == 0 && argstring.indexOf("-l") != -1) || etermset.files[i][1].indexOf(".") != 0)
+				{
+					if (etermset.files[i][0] == "bin")
+					{
+						tmp = tmp + "<span style=\"color: #A0F59D\">";
+					}
+					else if (etermset.files[i][0] == "txt")
+					{
+						tmp = tmp + "<span style=\"color: #FFF\">";
+					}
+					tmp = tmp + etermset.files[i][1] + "</span> ";
+				}
+			}
+			EmulatedTerminal.WriteTerminalLine(tmp);
+		});
+	EmulatedTerminal.AddTerminalCommand("cat", function(argstring) {
+			var tmp = EmulatedTerminal.ReadTerminalFile(argstring);
+			if (tmp != null)
+			{
+				EmulatedTerminal.WriteTerminalLine(tmp);
+			}
+			else
+			{
+				EmulatedTerminal.WriteTerminalLine("File \"" + argstring + "\" either doesn't exist or isn't a plaintext file.");
+			}
 		});
 	EmulatedTerminal.AddTerminalCommand("su", function(argstring) {
 			etermset.username = argstring;
@@ -106,11 +188,8 @@ function addBasicCommands()
 			}
 			etermset.pathline = pathline;
 		});
-	EmulatedTerminal.AddTerminalCommand("credits", function(argstring) {
-			EmulatedTerminal.WriteTerminalLine("Made by Chloride Cull one dark night in 2013...");
-			EmulatedTerminal.WriteTerminalLine("Available on <a href=\"https://github.com/ChlorideCull/EmulatedTerminalJS\">GitHub</a>.");
-			EmulatedTerminal.WriteTerminalLine("Released under the MIT License.");
-		});
+	////////////////////////////////////////
+	EmulatedTerminal.SetTerminalFile("credits", "Made by Chloride Cull one dark night in 2013...<br />Available on <a href=\"https://github.com/ChlorideCull/EmulatedTerminalJS\">GitHub</a>.<br />Released under the MIT License.");
 }
 
 EmulatedTerminal.CreateTerminal = function(WhichEntity, Username, CurrentPath)
@@ -126,7 +205,8 @@ EmulatedTerminal.CreateTerminal = function(WhichEntity, Username, CurrentPath)
 		etermset.hostname = window.location.hostname;
 	}
 	etermset.currentpath = CurrentPath; //Which the current path is supposed to be.
-	etermset.validcommands = new Array();
+	etermset.files = new Array();
+	etermset.filesindex = new Array();
 	addBasicCommands();
 	var pathline = etermset.username + "@" + etermset.hostname + ":" + etermset.currentpath;
 	if (etermset.username == "root")
